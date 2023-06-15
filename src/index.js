@@ -2,7 +2,6 @@ import * as util from "util";
 import { performance, PerformanceObserver } from "perf_hooks";
 import { exec } from "child_process";
 import { initApi, uploadFile, downloadFile } from "./api";
-import * as fs from "fs/promises";
 
 const p_exec = util.promisify(exec);
 
@@ -13,10 +12,6 @@ async function createFile(size) {
   const outputFile = `/tmp/${size}_file`;
   await p_exec(`head -c ${size} </dev/urandom >${outputFile}`);
   return outputFile;
-}
-
-async function readFile(fileName) {
-  return await fs.readFile(fileName);
 }
 
 function getAvg(arr) {
@@ -63,12 +58,11 @@ async function runLoadTestWithParams(testId, api, fileSizeInBytes, numRuns) {
   );
   console.log(`creating file ${fileSizeInBytes}`);
   const fileName = await createFile(fileSizeInBytes);
-  const file = await readFile(fileName);
 
   // Run upload tests.
   const avgUploadTime = await runAsyncWithMeasure(
     `${testId}-upload-${fileSizeInBytes}-test`,
-    (runIndex) => uploadFile(api, `${testId}-${runIndex}`, file),
+    (runIndex) => uploadFile(api, `${testId}-${runIndex}`, fileName),
     numRuns
   );
   console.log(`average upload latency: ${avgUploadTime.toFixed(4)}ms`);
@@ -90,10 +84,8 @@ async function runLoadTest() {
   console.log("\n\nrunning...");
   const api = await initApi();
   const testId = Date.now();
-  await runLoadTestWithParams(testId, api, BYTES_IN_KB * KB_IN_MB, 1); // 1MB
-
-  await runLoadTestWithParams(testId, api, BYTES_IN_KB * KB_IN_MB * 50, 1); // 50MB
-
+  await runLoadTestWithParams(testId, api, BYTES_IN_KB * KB_IN_MB, 100); // 1MB
+  await runLoadTestWithParams(testId, api, BYTES_IN_KB * KB_IN_MB * 50, 50); // 50MB
   console.log("\nall done.\n");
 }
 
