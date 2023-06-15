@@ -16,8 +16,7 @@ async function createFile(size) {
 }
 
 async function readFile(fileName) {
-  const file = fs.readFile(fileName);
-  return new Uint8Array(file).buffer;
+  return await fs.readFile(fileName);
 }
 
 function getAvg(arr) {
@@ -65,7 +64,6 @@ async function runLoadTestWithParams(testId, api, fileSizeInBytes, numRuns) {
   console.log(`creating file ${fileSizeInBytes}`);
   const fileName = await createFile(fileSizeInBytes);
   const file = await readFile(fileName);
-  console.log(`${file}`);
 
   // Run upload tests.
   const avgUploadTime = await runAsyncWithMeasure(
@@ -85,7 +83,7 @@ async function runLoadTestWithParams(testId, api, fileSizeInBytes, numRuns) {
 
   console.log("cleaning up\n=====================");
 
-  await p_exec(`rm ${file}`);
+  await p_exec(`rm ${fileName}`);
 }
 
 async function runLoadTest() {
