@@ -59,7 +59,7 @@ async function runLoadTestWithParams(testId, api, fileSizeInBytes, numRuns) {
   console.log(`creating file ${fileSizeInBytes}`);
   const file = await createFile(fileSizeInBytes);
 
-  // 1MB file upload * 500
+  // Run upload tests.
   const avgUploadTime = await runAsyncWithMeasure(
     `${testId}-upload-${fileSizeInBytes}-test`,
     (runIndex) => uploadFile(api, file, `${testId}-${runIndex}`),
@@ -67,7 +67,7 @@ async function runLoadTestWithParams(testId, api, fileSizeInBytes, numRuns) {
   );
   console.log(`average upload latency: ${avgUploadTime.toFixed(4)}ms`);
 
-  // 1MB file download * 500
+  // Run download tests.
   const avgDownloadTime = await runAsyncWithMeasure(
     `${testId}-download-${fileSizeInBytes}-test`,
     (runIndex) => uploadFile(api, file, `${testId}-${runIndex}`),
