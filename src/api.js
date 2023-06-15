@@ -1,3 +1,5 @@
+import * as AWS from "aws-sdk";
+
 export async function initApi() {
   // TODO
   return null;
