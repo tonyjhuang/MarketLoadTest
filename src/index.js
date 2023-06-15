@@ -2,6 +2,7 @@ import * as util from "util";
 import { performance, PerformanceObserver } from "perf_hooks";
 import { exec } from "child_process";
 import { initApi, uploadFile, downloadFile } from "./api";
+import * as fs from "fs/promises";
 
 const p_exec = util.promisify(exec);
 
@@ -12,6 +13,11 @@ async function createFile(size) {
   const outputFile = `/tmp/${size}_file`;
   await p_exec(`head -c ${size} </dev/urandom >${outputFile}`);
   return outputFile;
+}
+
+async function readFile(fileName) {
+  const file = fs.readFile(fileName);
+  return new Uint8Array(file).buffer;
 }
 
 function getAvg(arr) {
@@ -57,12 +63,14 @@ async function runLoadTestWithParams(testId, api, fileSizeInBytes, numRuns) {
       `running upload and download load tests for file size: ${fileSizeInBytes}`
   );
   console.log(`creating file ${fileSizeInBytes}`);
-  const file = await createFile(fileSizeInBytes);
+  const fileName = await createFile(fileSizeInBytes);
+  const file = await readFile(fileName);
+  console.log(`${file}`);
 
   // Run upload tests.
   const avgUploadTime = await runAsyncWithMeasure(
     `${testId}-upload-${fileSizeInBytes}-test`,
-    (runIndex) => uploadFile(api, file, `${testId}-${runIndex}`),
+    (runIndex) => uploadFile(api, `${testId}-${runIndex}`, file),
     numRuns
   );
   console.log(`average upload latency: ${avgUploadTime.toFixed(4)}ms`);
@@ -70,12 +78,13 @@ async function runLoadTestWithParams(testId, api, fileSizeInBytes, numRuns) {
   // Run download tests.
   const avgDownloadTime = await runAsyncWithMeasure(
     `${testId}-download-${fileSizeInBytes}-test`,
-    (runIndex) => uploadFile(api, file, `${testId}-${runIndex}`),
+    (runIndex) => downloadFile(api, `${testId}-${runIndex}`),
     numRuns
   );
   console.log(`average download latency: ${avgDownloadTime.toFixed(4)}ms`);
 
   console.log("cleaning up\n=====================");
+
   await p_exec(`rm ${file}`);
 }
 
@@ -83,9 +92,9 @@ async function runLoadTest() {
   console.log("\n\nrunning...");
   const api = await initApi();
   const testId = Date.now();
-  await runLoadTestWithParams(testId, api, BYTES_IN_KB * KB_IN_MB, 500); // 1MB
+  await runLoadTestWithParams(testId, api, BYTES_IN_KB * KB_IN_MB, 1); // 1MB
 
-  await runLoadTestWithParams(testId, api, BYTES_IN_KB * KB_IN_MB * 50, 50); // 50MB
+  await runLoadTestWithParams(testId, api, BYTES_IN_KB * KB_IN_MB * 50, 1); // 50MB
 
   console.log("\nall done.\n");
 }
